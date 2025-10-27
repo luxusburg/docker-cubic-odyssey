@@ -2,7 +2,7 @@
 # cubic-wrapper.sh
 
 # Location of server executable
-SERVER_EXE="$server_files/server_files/CubicOdyseyServer.exe"
+SERVER_EXE="$server_files/server/CubicOdysseyServer.exe"
 
 cleanup() {
     echo "Received shutdown signal, stopping Foundry server..."

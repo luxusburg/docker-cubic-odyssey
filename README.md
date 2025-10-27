@@ -42,6 +42,10 @@ Contributions and feedback for improvements are welcome! 🤝
 * Docker Compose (for `docker-compose` method).
 * Basic understanding of Docker concepts (volumes, ports).
 
+>
+> Create an steam account without an email guard to be able to use this Version! 
+> User variables `LOGIN` and `PASSWORD` to download the server
+
 ## 🚀 Quick Start
 
 It's recommended to create a dedicated directory on your host machine to store server data and configuration before running the commands. For example:
@@ -89,7 +93,7 @@ services:
       # - PUID=1000
       # - PGID=1000
     volumes:
-      - ./server:/home/cubic-odyssey/server_files:rw      
+      - ./server:/home/cubic/server_files:rw      
     ports:
       - "27001:27001/udp"      
     restart: unless-stopped
