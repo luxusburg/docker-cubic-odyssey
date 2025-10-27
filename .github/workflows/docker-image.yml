@@ -13,10 +13,10 @@ jobs:
       matrix:
         include:
           - dockerfile: ./Dockerfile
-            image: luxusburg/docker-foundry:latest
+            image: luxusburg/docker-cubic-odyssey:latest
             target: image-cron
           - dockerfile: ./Dockerfile
-            image: luxusburg/docker-foundry:non_cron
+            image: luxusburg/docker-cubic-odyssey:non_cron
             target: base
           
     permissions:
