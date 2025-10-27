@@ -24,4 +24,9 @@ for ((i=0; i<${#variables[@]}; i+=2)); do
         echo "${config_name} set to: ${!var_name}"        
         value="${!var_name}"                
     fi
+    if grep -q "$config_name" "$APP_FILE"; then
+            sed -i "/$config_name /c $config_name $value" "$APP_FILE"
+        else
+            echo -ne "\n$config_name $value" >> "$APP_FILE"
+    fi
 done

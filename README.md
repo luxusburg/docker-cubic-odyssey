@@ -44,7 +44,7 @@ Contributions and feedback for improvements are welcome! 🤝
 
 >
 > Create an steam account without an email guard to be able to use this Version! 
-> User variables `LOGIN` and `PASSWORD` to download the server
+> User variables `STEAM_LOGIN` and `STEAM_PWD` to download the server
 
 ## 🚀 Quick Start
 
