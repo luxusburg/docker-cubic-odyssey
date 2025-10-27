@@ -1,0 +1,17 @@
+GameParams
+{
+	m_server ServerParams
+	{
+		startingPort 27001
+		endingPort 27001
+		serverName "Luxusburg Docker Server"
+		serverPassword ""
+		maxPlayers 10
+		galaxySeed 0
+		gameMode ADVENTURE
+		allowRelaying FALSE
+		privateServer FALSE
+		enableCrashDumps TRUE
+		enableLogging TRUE
+	}
+}
