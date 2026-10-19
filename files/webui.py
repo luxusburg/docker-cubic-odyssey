@@ -47,7 +47,7 @@ CONTAINER_LOG = os.environ.get("CONTAINER_LOG") or os.path.join(
 INDEX_HTML = os.path.join(HERE, "webui_index.html")
 
 APP_NAME = "Cubic Odyssey"
-GAME_DIR = os.path.join(SERVER_FILES, "CubicOdyssey")
+GAME_DIR = os.path.join(SERVER_FILES, "save_server")
 SCHEDULER_LOG = os.environ.get("SCHEDULER_LOG") or os.path.join(
     PERSISTENT_DATA, "cubic_scheduler.log"
 )
@@ -174,23 +174,29 @@ def backup_files():
 
 
 def server_pids():
-    """Pids matching the game server binary or wine's wineserver."""
+    """Pids matching the game server binary or wine's wineserver.
+
+    Scans /proc directly: the steamcmd base image ships no procps, so pgrep
+    is unavailable and a shell-out would silently report 'not running'.
+    """
     pids = set()
-    for pattern in PROC_PATTERNS:
-        try:
-            out = subprocess.run(
-                ["pgrep", "-f", pattern],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-        except (OSError, subprocess.SubprocessError):
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return []
+    for entry in entries:
+        if not entry.isdigit():
             continue
-        for line in (out.stdout or "").splitlines():
-            line = line.strip()
-            if line.isdigit():
-                pids.add(int(line))
-    pids.discard(os.getpid())
+        pid = int(entry)
+        if pid == os.getpid():
+            continue
+        try:
+            with open("/proc/%s/cmdline" % pid, "rb") as handle:
+                cmdline = handle.read().replace(b"\0", b" ").decode("utf-8", "replace")
+        except OSError:
+            continue
+        if any(pattern in cmdline for pattern in PROC_PATTERNS):
+            pids.add(pid)
     return sorted(pids)
 
 

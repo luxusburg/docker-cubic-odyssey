@@ -53,7 +53,7 @@ Full documentation (ports, restore workflow, Steam Guard edge cases, troubleshoo
 
 | Path | Content |
 |------|---------|
-| `/home/cubic/server_files` | Game install, Wine prefix, game data (`CubicOdyssey/`), `config/server_config.txt`. |
+| `/home/cubic/server_files` | Game install, Wine prefix, game data (`save_server/`), `config/server_config.txt`. |
 | `/home/cubic/persistent_data` | Backups (`backup/`), scheduler + container logs. |
 
 ## Backup & restore

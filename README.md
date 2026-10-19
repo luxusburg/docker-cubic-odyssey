@@ -127,7 +127,7 @@ Server options are written into the game's own `config/server_config.txt` inside
 
 | Container path            | Content |
 |---------------------------|---------|
-| `/home/cubic/server_files`  | Game server install (SteamCMD), the Wine prefix (`.wine/`), the mutable game data in `CubicOdyssey/` (world/saves) and `config/server_config.txt`. |
+| `/home/cubic/server_files`  | Game server install (SteamCMD), the Wine prefix (`.wine/`), the mutable game data in `save_server/` (world saves) and `config/server_config.txt`. |
 | `/home/cubic/persistent_data` | Backups (`backup/`), scheduler log, container logs for the Web UI. |
 
 ### 🔌 Ports
@@ -141,7 +141,7 @@ ports:
 
 ## 💾 Backup and Recovery
 
-Backups run automatically on a schedule (`:latest` image default: 4/day) and archive **only the game data** (`server_files/CubicOdyssey`), never the ~1.2 GB of re-downloadable binaries. Archives land in `./data/backup/` as `cubic_backup-YYYY-MM-DD_HH-MM-SS.tar.gz`.
+Backups run automatically on a schedule (default: 4/day) and archive **only the world data** (`server_files/save_server`), never the ~1.2 GB of re-downloadable binaries. Archives land in `./data/backup/` as `cubic_backup-YYYY-MM-DD_HH-MM-SS.tar.gz`.
 
 Each archive is integrity-checked before it is kept, disk space is guarded (`MIN_FREE_DISK_GB`), and old archives are pruned by count (`BACKUP_RETENTION`).
 
@@ -224,7 +224,7 @@ Only variables you actually set are written — everything else keeps the values
 | `RUN_BACKUP_ON_BOOT`   | `false`        | Run a backup shortly after every boot. |
 | `BACKUP_RETENTION`     | `30`           | Number of archives kept (oldest pruned). |
 | `MIN_FREE_DISK_GB`     | `5`            | Skip backups when the backup volume has less free space. |
-| `BACKUP_INCLUDE`       | `$SERVER_FILES/CubicOdyssey` | Space-separated paths to archive. |
+| `BACKUP_INCLUDE`       | `$SERVER_FILES/save_server` | Space-separated paths to archive. |
 
 ### 👤 User PUID/PGID
 
@@ -291,7 +291,7 @@ All container scripts log through one shared helper, so every line is timestampe
 * **First start takes a while** — the server tool (~1.2 GB) downloads on first boot; watch progress with `docker logs -f cubic-odyssey-server`.
 * **Server starts then quits with a Steam error** — check that `server_files` isn't mounted with an odd `PUID` that blocks SteamCMD's caches (the entrypoint fixes the common cases; if you remap deeply, `chown` your host folders too).
 * **Port already used** — the server falls through `STARTING_PORT`→`ENDING_PORT`; change `GAME_PORT` or free the port.
-* **No backups appear** — game data (`CubicOdyssey/`) is created only after the world has been generated; the scheduler logs a warning until then. Check `BACKUPS` is not `false` and that the `:non_cron` image was not intended.
+* **No backups appear** — game data (`save_server/`) is created only after the world has been generated; the scheduler logs a warning until then. Check `BACKUPS` is not `false` and that the `:non_cron` image was not intended.
 * **Wine prefix** — lives in `server_files` (`.wine`); deleting it forces first-time setup (game data is not lost, but expect a longer start).
 
 ## 💖 Contributing

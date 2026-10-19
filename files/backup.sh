@@ -14,14 +14,14 @@
 #                                   the server to be stopped.
 #   backup.sh --cron-quiet          suppress progress lines (errors + summary stay)
 #
-# What gets archived is BACKUP_INCLUDE - by default only the CubicOdyssey game
-# data directory. The ~1.2 GB of server binaries next to it are re-downloadable
+# What gets archived is BACKUP_INCLUDE - by default only the save_server
+# world data. The ~1.2 GB of server binaries are re-downloadable
 # via SteamCMD and are therefore NOT part of a backup.
 #
 # Environment:
 #   PERSISTENT_DATA     backup storage + bookkeeping (default /home/cubic/persistent_data)
 #   SERVER_FILES        server install root, archive layout is relative to it
-#   BACKUP_INCLUDE      space-separated paths to archive (default "$SERVER_FILES/CubicOdyssey")
+#   BACKUP_INCLUDE      space-separated paths to archive (default "$SERVER_FILES/save_server")
 #   BACKUP_RETENTION    number of archives to keep (default 30)
 #   MIN_FREE_DISK_GB    minimum free space required on the backup volume (default 5)
 
@@ -36,7 +36,7 @@ SUFFIX=".tar.gz"
 DEFAULT_RETENTION=30
 MIN_FREE_DISK_GB="${MIN_FREE_DISK_GB:-5}"
 LOCK_FILE="${CUBIC_BACKUP_LOCK:-/tmp/cubic_backup.lock}"
-BACKUP_INCLUDE="${BACKUP_INCLUDE:-$server_files/CubicOdyssey}"
+BACKUP_INCLUDE="${BACKUP_INCLUDE:-$server_files/save_server}"
 
 QUIET="no"
 
@@ -147,7 +147,7 @@ do_create() {
     local -a members
     mapfile -t members < <(existing_members)
     if [ ${#members[@]} -eq 0 ]; then
-        log "[WARN] no backup source present yet (CubicOdyssey data dir not created by the server yet?)"
+        log "[WARN] no backup source present yet (save_server world dir not created by the game yet?)"
         return 0
     fi
 
