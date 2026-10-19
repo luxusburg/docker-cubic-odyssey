@@ -290,7 +290,10 @@ class Handler(BaseHTTPRequestHandler):
         self._log_request(status)
 
     def _log_request(self, status):
-        print("%s %s %s" % (self.command, self._request_path().path, status), flush=True)
+        # Keep the container log clean: UI polling hits /api/status+/api/logs
+        # every few seconds. Log only writes and errors, not routine GETs.
+        if self.command not in ("GET", "HEAD") or status >= 400:
+            print("%s %s %s" % (self.command, self._request_path().path, status), flush=True)
 
     def _json(self, status, payload):
         self._respond(status, json.dumps(payload).encode("utf-8"))
