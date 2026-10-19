@@ -5,6 +5,13 @@
 # Unset/empty variables leave the value already in the file untouched, so the
 # defaults shipped in server_config.txt.sample survive.
 
+# Shared logging helpers. start.sh sources log.sh before sourcing this file,
+# so only load it when it is not already there (double-sourcing is guarded in
+# log.sh itself, this check keeps the intent obvious).
+if [ -z "${LOG_SH_LOADED:-}" ]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/log.sh"
+fi
+
 APP_FILE="$server_files/config/server_config.txt"
 SAMPLE_FILE="$server_files/config/server_config.txt.sample"
 
@@ -14,10 +21,10 @@ SAMPLE_FILE="$server_files/config/server_config.txt.sample"
 if [ ! -f "$APP_FILE" ]; then
     mkdir -p "$(dirname "$APP_FILE")"
     if [ -f "$SAMPLE_FILE" ]; then
-        echo "server_config.txt not found - creating it from server_config.txt.sample"
+        log_info "server_config.txt not found - creating it from server_config.txt.sample"
         cp "$SAMPLE_FILE" "$APP_FILE"
     else
-        echo "[WARN] server_config.txt.sample not found - writing a minimal default config"
+        log_warn "server_config.txt.sample not found - writing a minimal default config"
         cat > "$APP_FILE" <<'EOF'
 GameParams
 {
@@ -54,7 +61,7 @@ EOF
 fi
 
 if [ "$CUSTOM_CONFIG" = "true" ]; then
-    echo "Not changing server_config.txt"
+    log_info "Not changing server_config.txt"
     # This file is SOURCED by start.sh: a plain 'exit' would kill the whole
     # container startup. Return when sourced, exit only when executed.
     return 0 2>/dev/null || exit 0
@@ -89,13 +96,13 @@ write_key() {
         END {
             if (!done && !inserted) print "\t" key " " val
         }
-    ' "$APP_FILE" > "$APP_FILE.tmp" || { echo "[WARN] could not rewrite $APP_FILE"; rm -f "$APP_FILE.tmp"; return 1; }
+    ' "$APP_FILE" > "$APP_FILE.tmp" || { log_warn "could not rewrite $APP_FILE"; rm -f "$APP_FILE.tmp"; return 1; }
     mv "$APP_FILE.tmp" "$APP_FILE"
 
     if [ "$secret" = "secret" ]; then
-        echo "$key set to: ****"
+        log_info "$key set to: ****"
     else
-        echo "$key set to: $value"
+        log_info "$key set to: $value"
     fi
 }
 
@@ -105,7 +112,7 @@ set_string() {
     [ -z "$value" ] && return 0
     case "$value" in
         *'"'*)
-            echo "[WARN] $var: quotes not supported in this value - $key not changed"
+            log_warn "$var: quotes not supported in this value - $key not changed"
             return 0
             ;;
     esac
@@ -116,11 +123,11 @@ set_int() {
     local key="$1" var="$2" value="${!2}"
     [ -z "$value" ] && return 0
     if ! [[ "$value" =~ ^[0-9]+$ ]]; then
-        echo "[WARN] $var: '$value' is not a number - $key not changed"
+        log_warn "$var: '$value' is not a number - $key not changed"
         return 0
     fi
     if [ "$key" = "maxPlayers" ] && [ "$((10#$value))" -le 0 ]; then
-        echo "[WARN] $var: '$value' is not a positive number - $key not changed"
+        log_warn "$var: '$value' is not a positive number - $key not changed"
         return 0
     fi
     write_key "$key" "$value"
@@ -132,7 +139,7 @@ set_bool() {
     case "$(echo "$value" | tr '[:upper:]' '[:lower:]')" in
         true|1|yes)  write_key "$key" "TRUE" ;;
         false|0|no)  write_key "$key" "FALSE" ;;
-        *) echo "[WARN] $var: '$value' is not a boolean (true/false/1/0/yes/no) - $key not changed" ;;
+        *) log_warn "$var: '$value' is not a boolean (true/false/1/0/yes/no) - $key not changed" ;;
     esac
 }
 
@@ -143,7 +150,7 @@ if [ -n "$GALAXY_SEED" ]; then
     if [[ "$GALAXY_SEED" =~ ^[0-9]{1,11}$ ]]; then
         write_key "galaxySeed" "$GALAXY_SEED"
     else
-        echo "[WARN] GALAXY_SEED: '$GALAXY_SEED' is not up to 11 digits - galaxySeed not changed"
+        log_warn "GALAXY_SEED: '$GALAXY_SEED' is not up to 11 digits - galaxySeed not changed"
     fi
 fi
 
@@ -158,7 +165,7 @@ if [ -n "$GAME_MODE" ]; then
     case "$(echo "$GAME_MODE" | tr '[:upper:]' '[:lower:]')" in
         adventure) write_key "gameMode" "ADVENTURE" ;;
         creative)  write_key "gameMode" "CREATIVE" ;;
-        *) echo "[WARN] GAME_MODE: '$GAME_MODE' is not ADVENTURE or CREATIVE - gameMode not changed" ;;
+        *) log_warn "GAME_MODE: '$GAME_MODE' is not ADVENTURE or CREATIVE - gameMode not changed" ;;
     esac
 fi
 

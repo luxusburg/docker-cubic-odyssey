@@ -1,19 +1,29 @@
 #!/bin/bash
 # Location of server data and save data for docker
 
+# Shared logging helpers (timestamped, levelled output).
+source "$(dirname "${BASH_SOURCE[0]}")/log.sh"
+
+# Image version stamped at build time (Dockerfile), 'dev' when unset.
+LOG_IMAGE_VERSION="dev"
+for LOG_VERSION_FILE in ./scripts/VERSION "$(dirname "${BASH_SOURCE[0]}")/VERSION"; do
+    if [ -f "$LOG_VERSION_FILE" ]; then
+        LOG_IMAGE_VERSION=$(cat "$LOG_VERSION_FILE")
+        break
+    fi
+done
+log_banner "CUBIC ODYSSEY DEDICATED SERVER CONTAINER" \
+    "Image version: $LOG_IMAGE_VERSION"
+
 server_files=/home/cubic/server_files
 # backup.sh/scheduler.sh resolve paths from the exported SERVER_FILES var
 export SERVER_FILES="$server_files"
 
-echo " "
-echo "Server files location is set to : $server_files"
-echo " "
+log_info "Server files location is set to : $server_files"
 
 mkdir -p /home/cubic/.steam 2>/dev/null
 chmod -R 777 /home/cubic/.steam 2>/dev/null
-echo " "
-echo "Updating Cubic Odyssey Dedicated Server files..."
-echo " "
+log_phase "SteamCMD update"
 
 # The dedicated server TOOL downloads anonymously (verified 2026-10).
 # Only set STEAM_LOGIN/STEAM_PWD if Valve ever gates it behind game
@@ -24,16 +34,16 @@ if [ ! -z "$BETANAME" ]; then
     update_args="3858450 -beta $BETANAME"
     if [ ! -z "$BETAPASSWORD" ]; then
         update_args="$update_args -betapassword $BETAPASSWORD"
-        echo "Using beta $BETANAME with the password ****"
+        log_info "Using beta $BETANAME with the password ****"
     else
-        echo "Using beta $BETANAME without a password!"
+        log_info "Using beta $BETANAME without a password!"
     fi
 else
-    echo "No beta branch used."
+    log_info "No beta branch used."
 fi
 
 if [ ! -z "$STEAM_LOGIN" ]; then
-    echo "Logging in to Steam as $STEAM_LOGIN"
+    log_info "Logging in to Steam as $STEAM_LOGIN"
     printf '%s\n' "${STEAM_GUARD_CODE:-}" | steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login "$STEAM_LOGIN" "$STEAM_PWD" +app_license_request 3858450 +app_update "$update_args" validate +quit
 else
     steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login anonymous +app_license_request 3858450 +app_update "$update_args" validate +quit
@@ -50,30 +60,30 @@ if [ -n "$sc64" ] && [ -f "$sc64" ]; then
     cp -f "$sc64" "$HOME/.steam/sdk64/steamclient.so"
     sc32="${sc64/linux64/linux32}"
     [ -f "$sc32" ] && cp -f "$sc32" "$HOME/.steam/sdk32/steamclient.so"
-    echo "Steam client libraries staged for wine."
+    log_info "Steam client libraries staged for wine."
 else
-    echo "[WARN] steamclient.so not found next to SteamCMD - the server may fail to start."
+    log_warn "steamclient.so not found next to SteamCMD - the server may fail to start."
 fi
 
 # Fail fast with a clear message instead of crash-looping wine on a broken
 # or partial download (Steam outage, empty credentials, disk full).
+log_phase "Install check"
 if [ ! -f "$server_files/server/CubicOdysseyServer.exe" ]; then
-    echo "[ERROR] Cubic Odyssey server installation failed - server/CubicOdysseyServer.exe missing."
-    echo "[ERROR] The SteamCMD update above did not produce a usable server. Check the output above"
-    echo "[ERROR] (Steam outage? invalid STEAM_LOGIN/STEAM_PWD/STEAM_GUARD_CODE? disk full?) and restart."
+    log_error "Cubic Odyssey server installation failed - server/CubicOdysseyServer.exe missing."
+    log_error "The SteamCMD update above did not produce a usable server. Check the output above"
+    log_error "(Steam outage? invalid STEAM_LOGIN/STEAM_PWD/STEAM_GUARD_CODE? disk full?) and restart."
     exit 1
 fi
-echo "Server files installed OK."
-echo " "
+log_info "Server files installed OK."
 
+log_phase "Config generation"
 if [ "$CUSTOM_CONFIG" = "true" ]; then
-    echo "CUSTOM_CONFIG=true: using your own server_config.txt untouched"
+    log_info "CUSTOM_CONFIG=true: using your own server_config.txt untouched"
 else
-    echo "Running setup script for server_config.txt"
+    log_info "Running setup script for server_config.txt"
     source ./scripts/env2cfg.sh
 fi
 
-echo " "
 # Apply a deferred restore (backup.sh --restore without --now) before the
 # server starts, so the game loads the restored game data. No-op if none.
 bash ./scripts/backup.sh --apply-pending
@@ -81,24 +91,22 @@ bash ./scripts/backup.sh --apply-pending
 # Automatic backups run through an in-process scheduler instead of cron:
 # it sees the container environment (BACKUP_RETENTION, TZ), logs to
 # `docker logs`, and runs as the cubic user (no root-owned archives).
+log_phase "Scheduler start"
 if [ "$BACKUPS" = false ] || [ "$BACKUPS" = off ] || [ "$BACKUPS" = no ]; then
-    echo "Backups disabled"
+    log_info "Backups disabled"
 else
     nohup bash ./scripts/scheduler.sh >/dev/null 2>&1 &
-    echo "Backup scheduler started"
+    log_info "Backup scheduler started"
 fi
 
-echo " "
-echo "Cleaning possible X11 leftovers"
-echo " "
+log_info "Cleaning possible X11 leftovers"
 # Targeted cleanup only: the old condition was always true and wiped ALL of
 # /tmp, including files other processes still need.
 rm -f /tmp/.X*-lock 2>/dev/null
 rm -rf /tmp/.X11-unix 2>/dev/null
 
 cd "$server_files"
-echo "Starting Cubic Odyssey Dedicated Server"
-echo " "
-echo "Launching wine Cubic Odyssey"
-echo " "
+log_phase "Wine launch"
+log_info "Starting Cubic Odyssey Dedicated Server"
+log_info "Launching wine Cubic Odyssey"
 source /home/cubic/scripts/wrapper.sh

@@ -26,6 +26,7 @@ Contributions and feedback for improvements are welcome! 🤝
   - [🗳️ Backup Settings](#-backup-settings)
   - [👤 User PUID/PGID](#-user-puidpgid)
   - [🧪 Beta Branch](#-beta-branch)
+- [📜 Logging](#-logging)
 - [💖 Contributing](#-contributing)
 
 ## ✨ Features
@@ -187,6 +188,23 @@ To use a beta branch of the game:
 |-----------------|-------------------|--------------------------------------------------|
 | `BETANAME`     | `(none)`          | Name of the Steam beta branch to use.            |
 | `BETAPASSWORD` | `(none)`          | Password for the beta branch, if required.       |
+
+## 📜 Logging
+
+All container scripts log through one shared helper, so every line is timestamped:
+
+```
+[2026-10-19 08:15:02] [INFO ] No beta branch used.
+[2026-10-19 08:15:41] [WARN ] steamclient.so not found next to SteamCMD - the server may fail to start.
+[2026-10-19 08:15:41] [ERROR] Cubic Odyssey server installation failed - server/CubicOdysseyServer.exe missing.
+== SteamCMD update ==
+```
+
+* Timestamp format: `[YYYY-MM-DD HH:MM:SS] [LEVEL ] message` (container local time, i.e. `TZ`).
+* Set `LOG_LEVEL` to control verbosity: `error`, `warn`, `info` (default) or `debug`/`trace` for script-level debugging.
+* Errors go to stderr, everything else to stdout - both are visible in `docker logs -f <container>`.
+* Colour codes are emitted only on an interactive terminal; when the logs are captured by Docker the output stays free of escape sequences.
+* SteamCMD and wine/game output is passed through unmodified.
 
 ## 💖 Contributing
 
