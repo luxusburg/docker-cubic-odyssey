@@ -11,14 +11,13 @@ ENV TZ='Europe/Berlin'
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Install wine, xvfb, cron, and xauth (required for xvfb-run)
+# Install wine, xvfb, and xauth (required for xvfb-run)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         jq \
         wine \
         xvfb \
         xauth \
-        cron \
         tzdata \
         locales \
         sudo && \
@@ -46,11 +45,6 @@ RUN chmod +x $HOME/scripts/*.sh
 ENTRYPOINT ["/bin/bash", "/home/cubic/scripts/entrypoint.sh"]
 CMD ["/home/cubic/scripts/start.sh"]
 
+# Cron was replaced by the in-process backup scheduler (files/scheduler.sh),
+# started from start.sh. This stage only exists for tag compatibility.
 FROM base AS image-cron
-USER root
-# Setting up cron file for backup
-ADD --chown=$USER:$USER ./files/cubic-cron /etc/cron.d/cubic-cron
-RUN chmod 0644 /etc/cron.d/cubic-cron && \
-    crontab /etc/cron.d/cubic-cron && \
-    service cron start
-USER $USER

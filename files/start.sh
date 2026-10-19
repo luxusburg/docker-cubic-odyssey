@@ -2,6 +2,8 @@
 # Location of server data and save data for docker
 
 server_files=/home/cubic/server_files
+# backup.sh/scheduler.sh resolve paths from the exported SERVER_FILES var
+export SERVER_FILES="$server_files"
 
 echo " "
 echo "Server files location is set to : $server_files"
@@ -72,18 +74,18 @@ else
 fi
 
 echo " "
-if [ -n "$NO_CRON" ]; then
-    echo "No Cron image used!"
-else
-    sudo -u root cron
+# Apply a deferred restore (backup.sh --restore without --now) before the
+# server starts, so the game loads the restored game data. No-op if none.
+bash ./scripts/backup.sh --apply-pending
 
-    if [ "$BACKUPS" = false ]; then
-        echo "[IMPORTANT] Backups are disabled!"
-        sudo -u root sed -i "/backup.sh/c # 0 * * * * /home/cubic/scripts/backup.sh 2>&1" /var/spool/cron/crontabs/root
-    elif [ -n "$BACKUP_INTERVAL" ]; then
-        echo "Changing backup interval to $BACKUP_INTERVAL"
-        sudo -u root sed -i "/backup.sh/c $BACKUP_INTERVAL /home/cubic/scripts/backup.sh 2>&1" /var/spool/cron/crontabs/root
-    fi
+# Automatic backups run through an in-process scheduler instead of cron:
+# it sees the container environment (BACKUP_RETENTION, TZ), logs to
+# `docker logs`, and runs as the cubic user (no root-owned archives).
+if [ "$BACKUPS" = false ] || [ "$BACKUPS" = off ] || [ "$BACKUPS" = no ]; then
+    echo "Backups disabled"
+else
+    nohup bash ./scripts/scheduler.sh >/dev/null 2>&1 &
+    echo "Backup scheduler started"
 fi
 
 echo " "
