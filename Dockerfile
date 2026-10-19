@@ -45,9 +45,20 @@ WORKDIR $HOME
 ADD --chown=$USER:$USER ./files $HOME/scripts
 RUN chmod +x $HOME/scripts/*.sh
 
+# Build metadata (CI passes --build-arg VERSION=<git sha>)
+ARG VERSION=dev
+RUN echo "${VERSION}" > $HOME/scripts/VERSION
+LABEL org.opencontainers.image.title="docker-cubic-odyssey" \
+      org.opencontainers.image.description="Cubic Odyssey dedicated server (wine) with backups, scheduler and optional admin web UI" \
+      org.opencontainers.image.source="https://github.com/luxusburg/docker-cubic-odyssey" \
+      org.opencontainers.image.revision="${VERSION}"
+
 ENTRYPOINT ["/bin/bash", "/home/cubic/scripts/entrypoint.sh"]
 CMD ["/home/cubic/scripts/start.sh"]
 
-# Cron was replaced by the in-process backup scheduler (files/scheduler.sh),
-# started from start.sh. This stage only exists for tag compatibility.
+# Cron was replaced by the in-process backup scheduler (files/scheduler.sh).
+# This stage keeps :non_cron semantics: the marker file turns backups ON by
+# default; plain :base (published as :non_cron) leaves them OFF. BACKUPS=...
+# env always overrides either default (see start.sh).
 FROM base AS image-cron
+RUN touch /home/cubic/.image_cron && chown cubic:cubic /home/cubic/.image_cron

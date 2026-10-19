@@ -27,6 +27,9 @@ fi
 server_files=/home/cubic/server_files
 # backup.sh/scheduler.sh resolve paths from the exported SERVER_FILES var
 export SERVER_FILES="$server_files"
+# Keep the Wine prefix inside the persistent server volume so recreated
+# containers don't redo first-time Wine setup (default is $HOME/.wine).
+export WINEPREFIX="$server_files/.wine"
 
 log_info "Server files location is set to : $server_files"
 
@@ -101,11 +104,21 @@ bash ./scripts/backup.sh --apply-pending
 # it sees the container environment (BACKUP_RETENTION, TZ), logs to
 # `docker logs`, and runs as the cubic user (no root-owned archives).
 log_phase "Scheduler start"
-if [ "$BACKUPS" = false ] || [ "$BACKUPS" = off ] || [ "$BACKUPS" = no ]; then
-    log_info "Backups disabled"
-else
+if [ -n "$BACKUPS" ]; then
+    # explicit env wins: BACKUPS=false/off/no disables anything else
+    if [ "$BACKUPS" = false ] || [ "$BACKUPS" = off ] || [ "$BACKUPS" = no ]; then
+        log_info "Backups disabled (BACKUPS=$BACKUPS)"
+    else
+        nohup bash ./scripts/scheduler.sh >/dev/null 2>&1 &
+        log_info "Backup scheduler started (BACKUPS=$BACKUPS)"
+    fi
+elif [ -f "$HOME/.image_cron" ]; then
+    # default for :latest / image-cron builds: backups on
     nohup bash ./scripts/scheduler.sh >/dev/null 2>&1 &
-    log_info "Backup scheduler started"
+    log_info "Backup scheduler started (image default; disable with BACKUPS=false)"
+else
+    # :non_cron builds keep the historical backups-off default
+    log_info "Backups disabled (:non_cron image default; enable with BACKUPS=true)"
 fi
 
 if [ "${WEBUI:-false}" = true ]; then

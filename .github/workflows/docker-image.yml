@@ -2,7 +2,12 @@ name: Publish Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "test/v1.*" ]
+  schedule:
+    # Weekly rebuild (base image security freshness). Game server files are
+    # updated by SteamCMD at every container start anyway.
+    - cron: '23 4 * * 1'
+  workflow_dispatch: {}
 
 jobs:
 
@@ -13,12 +18,12 @@ jobs:
       matrix:
         include:
           - dockerfile: ./Dockerfile
-            image: luxusburg/docker-cubic-odyssey:latest
             target: image-cron
+            channel: latest
           - dockerfile: ./Dockerfile
-            image: luxusburg/docker-cubic-odyssey:non_cron
             target: base
-          
+            channel: non_cron
+
     permissions:
       contents: read
       packages: write
@@ -26,21 +31,39 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
+      # main/schedule/dispatch -> :latest and :non_cron.
+      # test/v1.x branches    -> :<version> and :<version>-non_cron, so test
+      # candidates never overwrite what users pull.
+      - name: Determine tags
+        id: tags
+        bash: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ matrix.channel }}"
+          else
+            ver="${GITHUB_REF_NAME#test/}"; ver="${ver#v}"
+            if [ "${{ matrix.channel }}" = "latest" ]; then tag="$ver"; else tag="$ver-${{ matrix.channel }}"; fi
+          fi
+          echo "tags=luxusburg/docker-cubic-odyssey:${tag}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${tag}"
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ matrix.image }}
           target: ${{ matrix.target }}
+          push: true
+          pull: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            VERSION=${{ github.sha }}

@@ -21,6 +21,14 @@ fi
 # To be able to use the volumes user cubic needs access
 sudo chown -R cubic:cubic /home/cubic
 
+# SteamCMD's own home (/home/steam in the base image) is owned by uid 1000.
+# After remapping cubic away from 1000, SteamCMD could no longer write its
+# download caches, so fix ownership together with the remap (default
+# PUID=1000 keeps working untouched).
+if { [ "$PUID" != "$current_uid" ] || [ "$PGID" != "$current_gid" ]; } && [ -d /home/steam ]; then
+    sudo chown -R "$PUID":"$PGID" /home/steam
+fi
+
 # If the IDs were remapped, the current process still runs under the old UID,
 # so re-exec the command as the updated cubic user.
 if [ "$PUID" != "$current_uid" ] || [ "$PGID" != "$current_gid" ]; then
