@@ -28,7 +28,7 @@ RUN echo 'export LC_ALL=$LC_ALL' >> /etc/profile.d/locale.sh && \
     sed -i 's|LANG=C.UTF-8|LANG=$LANG|' /etc/profile.d/locale.sh
 
 # add new user
-RUN groupadd -g ${PGUID:-1000} $USER && \
+RUN groupadd -g ${PGID:-1000} $USER && \
     useradd -d $HOME -u ${PUID:-1000} -g $USER $USER && \
     mkdir -p $HOME && \
     chown $USER:$USER $HOME

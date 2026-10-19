@@ -13,20 +13,39 @@ echo " "
 echo "Updating Cubic Odyssey Dedicated Server files..."
 echo " "
 
-if [ ! -z $BETANAME ];then
-    if [ ! -z $BETAPASSWORD ]; then
-        echo "Using beta $BETANAME with the password $BETAPASSWORD"
-        steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login $STEAM_LOGIN $STEAM_PWD +app_update "3858450 -beta $BETANAME -betapassword $BETAPASSWORD" validate +quit
+# The dedicated server TOOL downloads anonymously (verified 2026-10).
+# Only set STEAM_LOGIN/STEAM_PWD if Valve ever gates it behind game
+# ownership again; with Steam Guard on the account also set
+# STEAM_GUARD_CODE (delivered to SteamCMD's prompt via stdin).
+update_args="3858450"
+if [ ! -z "$BETANAME" ]; then
+    update_args="3858450 -beta $BETANAME"
+    if [ ! -z "$BETAPASSWORD" ]; then
+        update_args="$update_args -betapassword $BETAPASSWORD"
+        echo "Using beta $BETANAME with the password ****"
     else
-        echo "Using beta $BETANAME without a password!" 
-        steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login $STEAM_LOGIN $STEAM_PWD +app_update "3858450 -beta $BETANAME" validate +quit
+        echo "Using beta $BETANAME without a password!"
     fi
 else
     echo "No beta branch used."
-    steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login $STEAM_LOGIN $STEAM_PWD +app_update 3858450 validate +quit
 fi
 
-echo "steam_appid: "`cat $server_files/steam_appid.txt`
+if [ ! -z "$STEAM_LOGIN" ]; then
+    echo "Logging in to Steam as $STEAM_LOGIN"
+    printf '%s\n' "${STEAM_GUARD_CODE:-}" | steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login "$STEAM_LOGIN" "$STEAM_PWD" +app_update "$update_args" validate +quit
+else
+    steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login anonymous +app_update "$update_args" validate +quit
+fi
+
+# Fail fast with a clear message instead of crash-looping wine on a broken
+# or partial download (Steam outage, empty credentials, disk full).
+if [ ! -f "$server_files/server/CubicOdysseyServer.exe" ]; then
+    echo "[ERROR] Cubic Odyssey server installation failed - server/CubicOdysseyServer.exe missing."
+    echo "[ERROR] The SteamCMD update above did not produce a usable server. Check the output above"
+    echo "[ERROR] (Steam outage? invalid STEAM_LOGIN/STEAM_PWD/STEAM_GUARD_CODE? disk full?) and restart."
+    exit 1
+fi
+echo "Server files installed OK."
 echo " "
 
 echo "Running setup script for the app.cfg file"
@@ -50,14 +69,10 @@ fi
 echo " "
 echo "Cleaning possible X11 leftovers"
 echo " "
-if [ -f /tmp/.X0-lock ] || [ -d /tmp/ ]; then
-    if [ -f /tmp/.X0-lock ]; then
-        rm /tmp/.X0-lock > /dev/null 2>&1
-    fi
-    if [ -d /tmp/ ]; then
-        rm -r /tmp/* > /dev/null 2>&1
-    fi
-fi
+# Targeted cleanup only: the old condition was always true and wiped ALL of
+# /tmp, including files other processes still need.
+rm -f /tmp/.X*-lock 2>/dev/null
+rm -rf /tmp/.X11-unix 2>/dev/null
 
 cd "$server_files"
 echo "Starting Cubic Odyssey Dedicated Server"

@@ -5,7 +5,7 @@
 SERVER_EXE="$server_files/server/CubicOdysseyServer.exe"
 
 cleanup() {
-    echo "Received shutdown signal, stopping Foundry server..."
+    echo "Received shutdown signal, stopping Cubic Odyssey server..."
     
     # Send SIGTERM to wine process
     kill -TERM "$wine_pid" 2>/dev/null
@@ -31,7 +31,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start Xvfb and Wine
-echo "Starting Foundry Dedicated Server via Xvfb and Wine"
+echo "Starting Cubic Odyssey Dedicated Server via Xvfb and Wine"
 xvfb-run wine "$SERVER_EXE" -log 2>&1 &
 wine_pid=$!
 
