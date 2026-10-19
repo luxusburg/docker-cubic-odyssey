@@ -62,3 +62,7 @@ CMD ["/home/cubic/scripts/start.sh"]
 # env always overrides either default (see start.sh).
 FROM base AS image-cron
 RUN touch /home/cubic/.image_cron && chown cubic:cubic /home/cubic/.image_cron
+
+# The :non_cron variant was retired (single :latest image; disable backups
+# with BACKUPS=false). The base stage remains buildable for anyone who
+# explicitly wants a backups-off image.

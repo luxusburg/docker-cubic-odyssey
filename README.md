@@ -217,7 +217,7 @@ Only variables you actually set are written — everything else keeps the values
 
 | Variable               | Default        | Description |
 |------------------------|----------------|-------------|
-| `BACKUPS`              | `true` (`:latest`), `false` (`:non_cron`) | `true`/`false` — enable/disable the backup scheduler. Overrides the image default. |
+| `BACKUPS`              | `true`         | `true`/`false` — enable/disable the backup scheduler. |
 | `BACKUPS_PER_DAY`      | `4`            | Backups spread evenly over the day. |
 | `BACKUP_INTERVAL_MINUTES` | (unset)     | Set instead of `BACKUPS_PER_DAY` for a fixed interval in minutes. |
 | `BOOT_DELAY_MINUTES`   | `10`           | Wait after boot before the first backup may run. |

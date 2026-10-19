@@ -19,10 +19,9 @@ docker run -d \
 
 ## Image tags
 
-| Tag | Backups by default | Description |
-|-----|--------------------|-------------|
-| `latest` | ✅ 4/day | Recommended. Scheduler + safe restores. |
-| `non_cron` | ❌ | Same image, backup scheduler off by default (`BACKUPS=true` re-enables). |
+| Tag | Description |
+|-----|-------------|
+| `latest` | Recommended. Backup scheduler on by default (4/day) — disable with `BACKUPS=false`. |
 
 ## Features
 
@@ -44,7 +43,7 @@ docker run -d \
 | `GAME_MODE` / `GAMEMODE` | `ADVENTURE` | `ADVENTURE` or `CREATIVE`. |
 | `PRIVATE_SERVER` | `FALSE` | Hide from public browser. |
 | `CUSTOM_CONFIG` | `false` | Never touch `server_config.txt`. |
-| `BACKUPS` / `BACKUPS_PER_DAY` / `BACKUP_RETENTION` | image / `4` / `30` | Backup scheduler controls. |
+| `BACKUPS` / `BACKUPS_PER_DAY` / `BACKUP_RETENTION` | `true` / `4` / `30` | Backup scheduler controls. |
 | `WEBUI` / `WEBUI_TOKEN` / `WEBUI_PORT` | `false` / — / `8080` | Optional admin UI (HTTP — keep it off the public internet). |
 | `PUID` / `PGID` / `TZ` | `1000` / `1000` / `Europe/Berlin` | Standard container identity/timezone. |
 

@@ -20,9 +20,6 @@ jobs:
           - dockerfile: ./Dockerfile
             target: image-cron
             channel: latest
-          - dockerfile: ./Dockerfile
-            target: base
-            channel: non_cron
 
     permissions:
       contents: read
@@ -37,7 +34,7 @@ jobs:
       # candidates never overwrite what users pull.
       - name: Determine tags
         id: tags
-        bash: |
+        run: |
           if [ "${GITHUB_REF}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             tag="${{ matrix.channel }}"
           else
