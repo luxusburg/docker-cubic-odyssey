@@ -64,8 +64,12 @@ fi
 echo "Server files installed OK."
 echo " "
 
-echo "Running setup script for the app.cfg file"
-source ./scripts/env2cfg.sh   
+if [ "$CUSTOM_CONFIG" = "true" ]; then
+    echo "CUSTOM_CONFIG=true: using your own server_config.txt untouched"
+else
+    echo "Running setup script for server_config.txt"
+    source ./scripts/env2cfg.sh
+fi
 
 echo " "
 if [ -n "$NO_CRON" ]; then
