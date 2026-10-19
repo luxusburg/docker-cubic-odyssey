@@ -41,6 +41,9 @@ server_args=(-Port="${GAME_PORT:-27001}")
 [ ! -z "${SERVER_PWD}" ]  && server_args+=("-Password=${SERVER_PWD}")
 [ ! -z "${GAMEMODE:-$GAME_MODE}" ] && server_args+=("-Gamemode=${GAMEMODE:-$GAME_MODE}")
 [ ! -z "${MAX_PLAYERS}" ] && server_args+=("-MaxNumPlayers=${MAX_PLAYERS}")
+# The engine binds a port RANGE (official help: -Port=start -MaxPort=max).
+# When MAX_PORT is set, publish/mirror it; default stays single-port.
+[ ! -z "${MAX_PORT}" ] && server_args+=("-MaxPort=${MAX_PORT}")
 # Extra power-user arguments, word-splitting intentional (no quoting tricks):
 [ ! -z "${SERVER_ARGS}" ] && server_args+=(${SERVER_ARGS})
 # The engine's console thread prints a '#' prompt in a hot loop (~78k

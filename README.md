@@ -108,7 +108,8 @@ services:
       - ./server:/home/cubic/server_files:rw
       - ./data:/home/cubic/persistent_data:rw
     ports:
-      - "27001:27001/udp"
+      # The engine can bind a port range; with MAX_PORT set, publish the whole range
+      - "27001-27014:27001-27014/udp"
     restart: unless-stopped
 ```
 
@@ -134,7 +135,7 @@ Server options are written into the game's own `config/server_config.txt` inside
 
 ### 🔌 Ports
 
-The game listens on **one UDP port** (`GAME_PORT`, default `27001`). If it is busy the server tries the range `STARTING_PORT`→`ENDING_PORT` from `server_config.txt`. Expose the port you choose:
+The game listens on UDP `GAME_PORT` and, with `MAX_PORT` set, binds the whole inclusive range for player connections (official `-Port`/`-MaxPort`). Publish every port the engine binds — the compose syntax `"27001:27014"` is NOT a range (it maps host 27001 to container 27014); use `"27001-27014:27001-27014/udp"`. Joining by **lobby key goes through Epic (EOS)**: Epic hands your client the server's public address, so lobby-key joins from inside your LAN need router hairpin NAT or an explicit port forward of the full range. If it is busy the server tries the range `STARTING_PORT`→`ENDING_PORT` from `server_config.txt`.
 
 ```yaml
 ports:
@@ -203,6 +204,7 @@ The container uses environment variables for configuration.
 | `SERVER_PWD`              | (none)                        | Server password 🔑 (also passed on the command line, overriding the config file). |
 | `MAX_PLAYERS`             | (game default `48`)           | Maximum number of players 🧑‍🤝‍🧑. |
 | `GAME_PORT`               | `27001`                       | The UDP port the server binds 🔌 (command line, overrides config). |
+| `MAX_PORT`                | (unset)                       | Upper bound of the bound port range (`-MaxPort`). Set it and publish the full range, e.g. `27001-27014` 📡. |
 | `GAMEMODE`                | `ADVENTURE` or `CREATIVE`     | Game mode; `GAME_MODE` is accepted as an alias 🎲. |
 | `GALAXY_SEED`             | `0`                           | Galaxy seed 🗺️ — up to 11 digits. |
 | `PRIVATE_SERVER`          | `FALSE`                       | `true`/`false` — hide from the public browser. |
