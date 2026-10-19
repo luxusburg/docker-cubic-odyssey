@@ -33,8 +33,6 @@ export WINEPREFIX="$server_files/.wine"
 
 log_info "Server files location is set to : $server_files"
 
-mkdir -p /home/cubic/.steam 2>/dev/null
-chmod -R 777 /home/cubic/.steam 2>/dev/null
 log_phase "SteamCMD update"
 
 # The dedicated server TOOL downloads anonymously (verified 2026-10).
