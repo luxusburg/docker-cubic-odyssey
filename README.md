@@ -67,6 +67,7 @@ The examples map `./server` (game install + saves) and `./data` (backups & logs)
 ```bash
 docker run -d \
     --name cubic-odyssey-server \
+    -t \
     -p 27001:27001/udp \
     -v ./server:/home/cubic/server_files \
     -v ./data:/home/cubic/persistent_data \
@@ -84,6 +85,7 @@ services:
   cubic-odyssey:
     container_name: cubic-odyssey-server
     image: luxusburg/docker-cubic-odyssey:latest
+    tty: true # gives the engine console a real terminal (prevents '#' prompt log spam)
     network_mode: bridge # Or 'host' if preferred, adjust ports accordingly
     environment:
       - TZ=Europe/Paris

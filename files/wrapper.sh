@@ -43,7 +43,14 @@ server_args=(-Port="${GAME_PORT:-27001}")
 [ ! -z "${MAX_PLAYERS}" ] && server_args+=("-MaxNumPlayers=${MAX_PLAYERS}")
 # Extra power-user arguments, word-splitting intentional (no quoting tricks):
 [ ! -z "${SERVER_ARGS}" ] && server_args+=(${SERVER_ARGS})
-xvfb-run wine "$SERVER_EXE" "${server_args[@]}" 2>&1 &
+# The engine's console thread prints a '#' prompt in a hot loop (~78k
+# lines/s, 1.6 GB/h of log) when it has no real terminal to read from: the
+# read returns instantly, so the prompt reprints forever. Two-layer fix:
+# run the container with a TTY (tty: true, see README/compose examples) and
+# drop prompt-only lines from the output stream as a hard guarantee.
+# The process substitution keeps wine a direct child, so SIGTERM
+# forwarding above still works.
+xvfb-run wine "$SERVER_EXE" "${server_args[@]}" > >(grep --line-buffered -vE '^#+[[:space:]]*$') 2>&1 &
 wine_pid=$!
 
 # Wait for the process to complete
