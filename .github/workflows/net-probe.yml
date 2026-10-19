@@ -1,0 +1,22 @@
+name: net-probe (temporary UDP path test)
+on:
+  push:
+    branches: [net-probe]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send UDP probes
+        run: |
+          python3 - <<'EOF'
+          import socket, time
+          s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          s.settimeout(5)
+          for i in range(5):
+              s.sendto(f"GH-RUNNER-PROBE-{i}".encode(), ("88.207.230.86", 27001))
+              print("sent", i, flush=True)
+              time.sleep(2)
+          # also check what the runner sees as its own egress (sanity)
+          import urllib.request
+          print("runner egress:", urllib.request.urlopen("https://api.ipify.org", timeout=5).read().decode())
+          EOF
