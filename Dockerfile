@@ -15,6 +15,7 @@ ENV LC_ALL=en_US.UTF-8
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         jq \
+        python3 \
         wine \
         xvfb \
         xauth \
@@ -38,7 +39,9 @@ RUN echo "$USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER && \
 USER $USER
 WORKDIR $HOME
 
-# Copy batch files and give execute rights
+# Copy batch files and give execute rights. webui.py/webui.sh ride along into
+# $HOME/scripts, which is also where webui.py looks for backup.sh.
+# python3 above is only needed for the optional web admin UI (WEBUI=true).
 ADD --chown=$USER:$USER ./files $HOME/scripts
 RUN chmod +x $HOME/scripts/*.sh
 

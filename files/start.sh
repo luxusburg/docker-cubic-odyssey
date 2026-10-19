@@ -15,6 +15,15 @@ done
 log_banner "CUBIC ODYSSEY DEDICATED SERVER CONTAINER" \
     "Image version: $LOG_IMAGE_VERSION"
 
+# The web admin UI tails the container log, so mirror everything into a file
+# when it is enabled. Only then; the normal boot keeps writing to stdout alone.
+if [ "${WEBUI:-false}" = true ]; then
+    webui_log_dir="${PERSISTENT_DATA:-/home/cubic/persistent_data}/logs"
+    mkdir -p "$webui_log_dir"
+    [ -f "$webui_log_dir/container.log" ] && > "$webui_log_dir/container.log"
+    exec > >(tee -a "$webui_log_dir/container.log") 2>&1
+fi
+
 server_files=/home/cubic/server_files
 # backup.sh/scheduler.sh resolve paths from the exported SERVER_FILES var
 export SERVER_FILES="$server_files"
@@ -97,6 +106,11 @@ if [ "$BACKUPS" = false ] || [ "$BACKUPS" = off ] || [ "$BACKUPS" = no ]; then
 else
     nohup bash ./scripts/scheduler.sh >/dev/null 2>&1 &
     log_info "Backup scheduler started"
+fi
+
+if [ "${WEBUI:-false}" = true ]; then
+    log_info 'Launching web admin UI'
+    bash ./scripts/webui.sh &
 fi
 
 log_info "Cleaning possible X11 leftovers"
