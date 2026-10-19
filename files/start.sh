@@ -32,9 +32,25 @@ fi
 
 if [ ! -z "$STEAM_LOGIN" ]; then
     echo "Logging in to Steam as $STEAM_LOGIN"
-    printf '%s\n' "${STEAM_GUARD_CODE:-}" | steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login "$STEAM_LOGIN" "$STEAM_PWD" +app_update "$update_args" validate +quit
+    printf '%s\n' "${STEAM_GUARD_CODE:-}" | steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login "$STEAM_LOGIN" "$STEAM_PWD" +app_license_request 3858450 +app_update "$update_args" validate +quit
 else
-    steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login anonymous +app_update "$update_args" validate +quit
+    steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir "$server_files" +login anonymous +app_license_request 3858450 +app_update "$update_args" validate +quit
+fi
+
+# The wine game process loads steamclient.so from ~/.steam/sdk64 (and sdk32)
+# at startup; without it the server aborts with a Steam library error.
+# Copied from SteamCMD's payload, same as the official Pterodactyl egg.
+steamcmd_home=$(dirname "$(readlink -f "$(command -v steamcmd)")")
+sc64="$steamcmd_home/linux64/steamclient.so"
+[ -f "$sc64" ] || sc64=$(find / -path /proc -prune -o -path '*/linux64/steamclient.so' -print 2>/dev/null | head -1)
+if [ -n "$sc64" ] && [ -f "$sc64" ]; then
+    mkdir -p "$HOME/.steam/sdk64" "$HOME/.steam/sdk32"
+    cp -f "$sc64" "$HOME/.steam/sdk64/steamclient.so"
+    sc32="${sc64/linux64/linux32}"
+    [ -f "$sc32" ] && cp -f "$sc32" "$HOME/.steam/sdk32/steamclient.so"
+    echo "Steam client libraries staged for wine."
+else
+    echo "[WARN] steamclient.so not found next to SteamCMD - the server may fail to start."
 fi
 
 # Fail fast with a clear message instead of crash-looping wine on a broken

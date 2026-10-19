@@ -32,7 +32,15 @@ trap cleanup SIGINT SIGTERM
 
 # Start Xvfb and Wine
 echo "Starting Cubic Odyssey Dedicated Server via Xvfb and Wine"
-xvfb-run wine "$SERVER_EXE" -log 2>&1 &
+# Runtime parameters go on the command line (like the official Pterodactyl
+# egg) - they take precedence over config/server_config.txt values.
+server_args=(-Port="${GAME_PORT:-27001}")
+[ ! -z "${SERVER_PWD}" ]  && server_args+=("-Password=${SERVER_PWD}")
+[ ! -z "${GAMEMODE:-$GAME_MODE}" ] && server_args+=("-Gamemode=${GAMEMODE:-$GAME_MODE}")
+[ ! -z "${MAX_PLAYERS}" ] && server_args+=("-MaxNumPlayers=${MAX_PLAYERS}")
+# Extra power-user arguments, word-splitting intentional (no quoting tricks):
+[ ! -z "${SERVER_ARGS}" ] && server_args+=(${SERVER_ARGS})
+xvfb-run wine "$SERVER_EXE" "${server_args[@]}" 2>&1 &
 wine_pid=$!
 
 # Wait for the process to complete
